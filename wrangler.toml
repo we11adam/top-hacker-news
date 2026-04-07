@@ -3,10 +3,15 @@ main = "build/worker/shim.mjs"
 compatibility_date = "2025-01-01"
 
 kv_namespaces = [
-  { binding = "thn", id = "e2c647264dc64651ab2db3f089f5a41e" }
+    { binding = "thn", id = "e2c647264dc64651ab2db3f089f5a41e" }
 ]
 
 triggers = { crons = ["*/10 * * * *"] }
 
 [build]
 command = "cargo install -q worker-build && worker-build --release"
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
