@@ -1,0 +1,8 @@
+/target
+/build
+.env
+*.wrangler
+.wrangler/
+
+.dev.vars
+.dev.vars.example
