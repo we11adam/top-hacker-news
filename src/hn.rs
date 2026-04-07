@@ -9,7 +9,8 @@ pub struct Story {
     pub url: Option<String>,
     #[serde(default)]
     pub score: u64,
-    pub descendants: Option<u64>, // comment count
+    #[serde(default)]
+    pub descendants: u64, // comment count
 }
 
 impl Story {

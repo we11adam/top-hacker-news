@@ -21,7 +21,7 @@ async fn fetch(_req: Request, env: Env, _ctx: Context) -> Result<Response> {
 }
 
 #[event(scheduled)]
-async fn scheduled(_event: ScheduledEvent, env: Env, _ctx: ScheduleContext) {
+async fn scheduled(_: ScheduledEvent, env: Env, _: ScheduleContext) {
     if let Err(e) = handle_push(env).await {
         console_error!("Scheduled push failed: {:?}", e);
     }
@@ -44,34 +44,29 @@ async fn handle_push(env: Env) -> Result<String> {
         let key = format!("story:{}", story_id);
         let already_pushed = kv.get(&key).text().await?;
 
-        if already_pushed.is_none() {
-            match hn_client.get_story(story_id).await {
-                Ok(story) => {
-                    if story.score < MIN_SCORE {
-                        return Ok(format!(
-                            "Story {} has score {}, skipping",
-                            story_id, story.score
-                        ));
-                    }
+        if already_pushed.is_some() {
+            continue;
+        }
 
-                    if story.descendants.unwrap_or(0) < MIN_COMMENTS {
-                        return Ok(format!(
-                            "Story {} has only {} comments, skipping",
-                            story_id,
-                            story.descendants.unwrap_or(0)
-                        ));
-                    }
-
-                    if let Err(e) = telegram.send_story_message(&story).await {
-                        console_error!("Failed to send story {}: {:?}", story_id, e);
-                    } else {
-                        let now = chrono::Utc::now().to_rfc3339();
-                        kv.put(&key, &now)?.execute().await?;
-                        pushed_count += 1;
-                    }
+        match hn_client.get_story(story_id).await {
+            Ok(story) => {
+                if story.score < MIN_SCORE {
+                    continue;
                 }
-                Err(e) => console_error!("Failed to fetch story {}: {:?}", story_id, e),
+
+                if story.descendants < MIN_COMMENTS {
+                    continue;
+                }
+
+                if let Err(e) = telegram.send_story_message(&story).await {
+                    console_error!("Failed to send story {}: {:?}", story_id, e);
+                } else {
+                    let now = chrono::Utc::now().to_rfc3339();
+                    kv.put(&key, &now)?.execute().await?;
+                    pushed_count += 1;
+                }
             }
+            Err(e) => console_error!("Failed to fetch story {}: {:?}", story_id, e),
         }
     }
 

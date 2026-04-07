@@ -39,10 +39,8 @@ impl TelegramBot {
         if story.score >= 100 {
             score_str.push_str(FIRE_SUFFIX);
         }
-        let mut comments_str = format!("Comments: {}+", story.descendants.unwrap_or(0));
-        if let Some(c) = story.descendants
-            && c >= 100
-        {
+        let mut comments_str = format!("Comments: {}+", story.descendants);
+        if story.descendants >= 100 {
             comments_str.push_str(FIRE_SUFFIX);
         }
         let keyboard = serde_json::json!([
