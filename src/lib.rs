@@ -51,10 +51,12 @@ async fn handle_push(env: Env) -> Result<String> {
         match hn_client.get_story(story_id).await {
             Ok(story) => {
                 if story.score < MIN_SCORE {
+                    console_log!("Skipping story {} due to low score: {}", story_id, story.score);
                     continue;
                 }
 
                 if story.descendants < MIN_COMMENTS {
+                    console_log!("Skipping story {} due to low comments: {}", story_id, story.descendants);
                     continue;
                 }
 
