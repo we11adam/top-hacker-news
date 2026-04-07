@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use worker::{console_error, Error, Fetch, Result, Url};
+use worker::{Error, Fetch, Result, Url, console_error};
 
 #[derive(Debug, Deserialize)]
 pub struct Story {

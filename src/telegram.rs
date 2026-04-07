@@ -1,6 +1,8 @@
 use crate::hn::Story;
 use crate::wasm_bindgen;
-use worker::{console_error, console_log, Error, Fetch, Request, RequestInit, Result, Url};
+use worker::{Error, Fetch, Request, RequestInit, Result, Url, console_error, console_log};
+
+static FIRE_SUFFIX: &str = "🔥";
 
 pub struct TelegramBot {
     bot_token: String,
@@ -33,14 +35,24 @@ impl TelegramBot {
     pub async fn send_story_message(&self, story: &Story) -> Result<()> {
         let url = Url::parse(&format!("{}{}/sendMessage", Self::API_BASE, self.bot_token))?;
 
+        let mut score_str = format!("Score: {}+", story.score);
+        if story.score >= 100 {
+            score_str.push_str(FIRE_SUFFIX);
+        }
+        let mut comments_str = format!("Comments: {}+", story.descendants.unwrap_or(0));
+        if let Some(c) = story.descendants
+            && c >= 100
+        {
+            comments_str.push_str(FIRE_SUFFIX);
+        }
         let keyboard = serde_json::json!([
             [
                 {
-                    "text": format!("Score: {}+", story.score),
+                    "text": score_str,
                     "url": story.link_url()
                 },
                 {
-                    "text": format!("Comments: {}+", story.descendants.unwrap_or(0)),
+                    "text":comments_str,
                     "url": story.comments_url()
                 }
             ]
