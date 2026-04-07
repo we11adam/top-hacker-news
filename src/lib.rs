@@ -5,6 +5,10 @@ use hn::HackerNewsClient;
 use telegram::TelegramBot;
 use worker::*;
 
+const TOP_STORY: usize = 30;
+const MIN_SCORE: u64 = 50;
+const MIN_COMMENTS: u64 = 5;
+
 #[event(fetch)]
 async fn fetch(_req: Request, env: Env, _ctx: Context) -> Result<Response> {
     match handle_push(env).await {
@@ -31,7 +35,7 @@ async fn handle_push(env: Env) -> Result<String> {
     let hn_client = HackerNewsClient;
     let telegram = TelegramBot::new(&bot_token, &chat_id);
 
-    let story_ids = hn_client.get_top_stories(30).await?;
+    let story_ids = hn_client.get_top_stories(TOP_STORY).await?;
     console_log!("Fetched {} top stories from HN", story_ids.len());
 
     let mut pushed_count = 0;
@@ -43,6 +47,21 @@ async fn handle_push(env: Env) -> Result<String> {
         if already_pushed.is_none() {
             match hn_client.get_story(story_id).await {
                 Ok(story) => {
+                    if story.score < MIN_SCORE {
+                        return Ok(format!(
+                            "Story {} has score {}, skipping",
+                            story_id, story.score
+                        ));
+                    }
+
+                    if story.descendants.unwrap_or(0) < MIN_COMMENTS {
+                        return Ok(format!(
+                            "Story {} has only {} comments, skipping",
+                            story_id,
+                            story.descendants.unwrap_or(0)
+                        ));
+                    }
+
                     if let Err(e) = telegram.send_story_message(&story).await {
                         console_error!("Failed to send story {}: {:?}", story_id, e);
                     } else {
